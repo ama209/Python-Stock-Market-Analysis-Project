@@ -1,0 +1,523 @@
+
+(base) C:\Users\adeol>python
+Python 3.9.7 (default, Sep 16 2021, 16:59:28) [MSC v.1916 64 bit (AMD64)] :: Anaconda, Inc. on win32
+Type "help", "copyright", "credits" or "license" for more information.
+>>> #1. what was the change in price of the stock over time? 2. what was the daily return of the stock on average? 3. What was the moving average of the various stocks? 4. What was the correlation between different stock closing and daily prices? 5. How much value do we put at risk by investing in a particular stock? 6. How can we attempt to predict futurre stock behavior?
+>>>
+>>> import pandas as pd
+>>> from pandas import Series, DataFrame
+>>> import numpy as np
+>>>
+>>> import matplotlib.pyplot as plt
+>>> import seaborn as sns
+>>> sns.set_style('whitegrid') #so we have a whitegrid for all our visualizations
+>>>
+>>> #for reading stock info on the internet
+>>> from pandas.io.data import DataReader
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'pandas.io.data'
+>>> from pandas_datareader import DataReader
+>>> from datetime import datetime
+
+>>> tech_list=['AAPL','GOOG', 'MSFT', 'AMZN']
+>>> end=datetime.now()
+>>> start=datetime(end.year-1,end.month,end.day)
+>>> for stock in tech_list:
+...  globals()[stock] = DataReader(stock,'yahoo',start,end) #for every stock in tech_list, DataReader will take the stock ticker from yahoo and grab the start and end dates
+...
+>>>
+>>> AAPL
+                  High         Low        Open       Close       Volume   Adj Close
+Date
+2021-05-06  129.750000  127.129997  127.889999  129.740005   78128300.0  128.784225
+2021-05-07  131.259995  129.479996  130.850006  130.210007   78973300.0  129.470337
+2021-05-10  129.539993  126.809998  129.410004  126.849998   88071200.0  126.129387
+2021-05-11  126.269997  122.769997  123.500000  125.910004  126142800.0  125.194740
+2021-05-12  124.639999  122.250000  123.400002  122.769997  112172300.0  122.072571
+...                ...         ...         ...         ...          ...         ...
+2022-05-02  158.229996  153.270004  156.710007  157.960007  123055300.0  157.728256
+2022-05-03  160.710007  156.320007  158.149994  159.479996   88966500.0  159.246017
+2022-05-04  166.479996  159.259995  159.669998  166.020004  108256500.0  165.776428
+2022-05-05  164.080002  154.949997  163.850006  156.770004  130525300.0  156.540009
+2022-05-06  159.440002  154.179993  156.009995  157.279999  116055700.0  157.279999
+
+[254 rows x 6 columns]
+>>> GOOG
+                   High          Low         Open        Close   Volume    Adj Close
+Date
+2021-05-06  2382.709961  2342.337891  2350.639893  2381.350098  1030900  2381.350098
+2021-05-07  2416.409912  2390.000000  2400.000000  2398.689941  1163600  2398.689941
+2021-05-10  2378.000000  2334.729980  2374.889893  2341.659912  1300300  2341.659912
+2021-05-11  2322.000000  2283.000000  2291.860107  2308.760010  1605500  2308.760010
+2021-05-12  2285.370117  2230.050049  2261.709961  2239.080078  1746700  2239.080078
+...                 ...          ...          ...          ...      ...          ...
+2022-05-02  2346.790039  2267.989990  2278.129883  2343.139893  1514000  2343.139893
+2022-05-03  2386.000000  2332.540039  2335.300049  2362.590088  1060800  2362.590088
+2022-05-04  2462.860107  2314.770020  2360.070068  2451.500000  1661600  2451.500000
+2022-05-05  2424.665039  2303.649902  2404.409912  2334.929932  2154500  2334.929932
+2022-05-06  2349.969971  2282.860107  2310.379883  2313.199951  1764000  2313.199951
+
+[254 rows x 6 columns]
+>>> MSFT.head()
+                  High         Low        Open       Close      Volume   Adj Close
+Date
+2021-05-06  249.860001  244.690002  246.449997  249.729996  26491100.0  247.712265
+2021-05-07  254.300003  251.169998  252.149994  252.460007  27032900.0  250.420227
+2021-05-10  251.729996  247.119995  250.869995  247.179993  29299900.0  245.182861
+2021-05-11  246.600006  242.570007  244.550003  246.229996  33641600.0  244.240555
+2021-05-12  244.380005  238.070007  242.169998  239.000000  36684400.0  237.068970
+>>> AMZN.head()
+                   High          Low         Open        Close   Volume    Adj Close
+Date
+2021-05-06  3314.399902  3247.199951  3270.000000  3306.370117  4447700  3306.370117
+2021-05-07  3330.889893  3289.070068  3319.090088  3291.610107  4710300  3291.610107
+2021-05-10  3283.000000  3190.000000  3282.320068  3190.489990  5838600  3190.489990
+2021-05-11  3238.000000  3127.370117  3136.280029  3223.909912  4619800  3223.909912
+2021-05-12  3207.939941  3133.100098  3185.000000  3151.939941  4936400  3151.939941
+>>> #Working with AAPL
+>>> AAPL.describe()
+             High         Low        Open       Close        Volume   Adj Close
+count  254.000000  254.000000  254.000000  254.000000  2.540000e+02  254.000000
+mean   155.524488  152.199566  153.763425  153.948780  8.689829e+07  153.426414
+std     15.925055   15.129469   15.580381   15.519966  2.546928e+07   15.663545
+min    124.639999  122.250000  123.160004  122.769997  4.100000e+07  122.072571
+25%    146.177505  143.247501  144.029999  145.174999  6.904842e+07  144.357746
+50%    152.985001  150.080002  151.205002  151.385002  8.209815e+07  150.860474
+75%    169.654995  165.384998  167.457497  166.524998  9.974570e+07  166.280693
+max    182.940002  179.119995  182.630005  182.009995  1.954327e+08  181.511703
+>>> APPL.info()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'APPL' is not defined
+>>> AAPL.info()
+<class 'pandas.core.frame.DataFrame'>
+DatetimeIndex: 254 entries, 2021-05-06 to 2022-05-06
+Data columns (total 6 columns):
+ #   Column     Non-Null Count  Dtype
+---  ------     --------------  -----
+ 0   High       254 non-null    float64
+ 1   Low        254 non-null    float64
+ 2   Open       254 non-null    float64
+ 3   Close      254 non-null    float64
+ 4   Volume     254 non-null    float64
+ 5   Adj Close  254 non-null    float64
+dtypes: float64(6)
+memory usage: 13.9 KB
+>>> AAPL['Adj Close'].plot(legend=True, figsize=(10,4))
+<AxesSubplot:xlabel='Date'>
+>>> plt.show()
+>>> #this gives the Adjusted close price for AAPL in the last year
+>>> GOOG ['Adj Close'].plot(legend=True, figsize=(10,4))
+<AxesSubplot:xlabel='Date'>
+>>> AMZN ['Adj Close'].plot(legend=True, figsize=(10,4))
+<AxesSubplot:xlabel='Date'>
+>>> MSFT['Adj Close'].plot(legend=True, figsize=(10,4))
+<AxesSubplot:xlabel='Date'>
+>>> plt.show()
+>>> AAPL['Volume'].plot(legend=True, figsize=(10,4))
+<AxesSubplot:xlabel='Date'>
+>>> plt.show()
+
+>>> #Moving Averages
+>>> ma_day=[50,100,200] #50, 100, and 200 day moving averages
+>>> for ma in ma_day:
+...  column_name = "MA for %s days" %(str(ma))
+...  AAPL[column_name] =AAPL['Adj Close'].rolling(ma).mean()
+...
+>>> AAPL[['Adj Close', 'MA for 50 days','MA for 100 days','MA for 200 days']].plot(subplots=False, figsize(10,4))
+  File "<stdin>", line 1
+    AAPL[['Adj Close', 'MA for 50 days','MA for 100 days','MA for 200 days']].plot(subplots=False, figsize(10,4))
+                                                                                                                ^
+SyntaxError: positional argument follows keyword argument
+>>> AAPL[['Adj Close', 'MA for 50 days','MA for 100 days','MA for 200 days']].plot(subplots=False)
+<AxesSubplot:xlabel='Date'>
+>>> AAPL[['Adj Close', 'MA for 50 days','MA for 100 days','MA for 200 days']].plot(subplots=False, figsize=(10,4))
+<AxesSubplot:xlabel='Date'>
+>>> plt.show()
+>>>
+>>> #Daily Returns and Risk of Stock
+>>> AAPL['Daily Return']=AAPL['Adj Close'].pct_change()
+>>> AAPL['Daily Return'].plot(legend=True, figsize=(15,4), marker='o')
+<AxesSubplot:xlabel='Date'>
+>>> plt.show()
+
+>>> #for avg return we will use a histogram in seaborn
+>>> sns.distplot(AAPL['Daily Return'].dropna(),bins=100,color='blue')
+<AxesSubplot:xlabel='Daily Return', ylabel='Density'>
+>>> plt.show()
+>>> AAPL['Daily Return'].hist(bins=100)
+<AxesSubplot:>
+>>> plt.show()
+
+>>> #Creating a DataFrame for all the Adj Close columns for each of the stocks
+>>> closing_df = DataReader(tech_list,'yahoo',start,end)['Adj Close']
+>>> #Here we specified we only want the Adj column
+>>> closing_df.head()
+Symbols           AAPL         GOOG        MSFT         AMZN
+Date
+2021-05-06  128.784241  2381.350098  247.712265  3306.370117
+2021-05-07  129.470322  2398.689941  250.420227  3291.610107
+2021-05-10  126.129387  2341.659912  245.182877  3190.489990
+2021-05-11  125.194740  2308.760010  244.240540  3223.909912
+2021-05-12  122.072571  2239.080078  237.068985  3151.939941
+>>> tech_rets=closing_df.pct_change()
+>>> tech_rets.head()
+Symbols         AAPL      GOOG      MSFT      AMZN
+Date
+2021-05-06       NaN       NaN       NaN       NaN
+2021-05-07  0.005327  0.007282  0.010932 -0.004464
+2021-05-10 -0.025805 -0.023775 -0.020914 -0.030721
+2021-05-11 -0.007410 -0.014050 -0.003843  0.010475
+2021-05-12 -0.024939 -0.030181 -0.029363 -0.022324
+>>> #Checking the correlation between two stocks
+>>> sns.jointplot('GOOG','GOOG', tech_rets, kind='scatter',color='indianred')
+C:\Users\adeol\anaconda3\lib\site-packages\seaborn\_decorators.py:36: FutureWarning: Pass the following variables as keyword args: x, y, data. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
+  warnings.warn(
+<seaborn.axisgrid.JointGrid object at 0x00000137211E78B0>
+>>> plt.show()
+>>> sns.jointplot('GOOG','MSFT', tech_rets, kind='scatter',color='indianred')
+C:\Users\adeol\anaconda3\lib\site-packages\seaborn\_decorators.py:36: FutureWarning: Pass the following variables as keyword args: x, y, data. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
+  warnings.warn(
+<seaborn.axisgrid.JointGrid object at 0x000001372801D820>
+>>> sns.jointplot('GOOG','AAPL', tech_rets, kind='scatter',color='indianred')
+C:\Users\adeol\anaconda3\lib\site-packages\seaborn\_decorators.py:36: FutureWarning: Pass the following variables as keyword args: x, y, data. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
+  warnings.warn(
+<seaborn.axisgrid.JointGrid object at 0x00000137246D3A30>
+>>> sns.jointplot('GOOG','AMZN', tech_rets, kind='scatter',color='indianred')
+C:\Users\adeol\anaconda3\lib\site-packages\seaborn\_decorators.py:36: FutureWarning: Pass the following variables as keyword args: x, y, data. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
+  warnings.warn(
+<seaborn.axisgrid.JointGrid object at 0x000001372461E220>
+>>> plt.show()
+>>> sns.pairplot(tech_rets.dropna())
+<seaborn.axisgrid.PairGrid object at 0x000001372461E100>
+>>> plt.show()
+>>> returns_fig=sns.PairGrid(tech_rets.dropna())
+>>> returns_fig.map_upper(plt.scatter,color='pink')
+<seaborn.axisgrid.PairGrid object at 0x00000137245A06A0>
+>>> returns_fig.map_lower(sns.kdeplot,cmap='cool_d')
+<seaborn.axisgrid.PairGrid object at 0x00000137245A06A0>
+>>> returns_fig.map_diag(plt.hist,bins=30)
+<seaborn.axisgrid.PairGrid object at 0x00000137245A06A0>
+>>> plt.show()
+>>> #Correlations between closing prices
+>>> returns_fig=sns.PairGrid(closing_df)
+>>> returns_fig.map_upper(plt.scatter,color='pink')
+<seaborn.axisgrid.PairGrid object at 0x0000013724BD6100>
+>>> returns_fig.map_lower(sns.kdeplot,cmap='cool_d')
+<seaborn.axisgrid.PairGrid object at 0x0000013724BD6100>
+>>> returns_fig.map_diag(plt.hist,bins=30)
+<seaborn.axisgrid.PairGrid object at 0x0000013724BD6100>
+>>> returns_fig.map_upper(plt.scatter,color='indianred')
+<seaborn.axisgrid.PairGrid object at 0x0000013724BD6100>
+>>> plt.show()
+>>>
+>>> #Correlation Plot on Daily Returns
+>>> sns.corrplot(tech_rets.dropna(),annot=True)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: module 'seaborn' has no attribute 'corrplot'
+>>> sns.heatmap(tech_rets.dropna(),annot=True)
+<AxesSubplot:xlabel='Symbols', ylabel='Date'>
+>>> plt.show()
+>>> sns.heatmap(tech_rets.dropna())
+<AxesSubplot:xlabel='Symbols', ylabel='Date'>
+>>> plt.show()
+>>> #corrplot has been depracated in favor of heatmap
+
+>>> #Risk Analysis
+>>> #There are many ways we can quantify risk, one of the most basic ways using the information we've gathered on daily percentage returns is by comparing the expected return with the standard deviation of the daily returns.
+>>> rets=tech_rets.dropna()
+>>> area=np.pi*20
+>>> #this is used to determine the size of the area of the plot so *20 makes it so we can see the plot better
+>>> plt.scatter(rets.mean(),rets.std(),s=area)
+<matplotlib.collections.PathCollection object at 0x0000013724A7E9D0>
+>>> plt.xlabel('Expected returns')
+Text(0.5, 0, 'Expected returns')
+>>> plt.ylabel('Risk')
+Text(0, 0.5, 'Risk')
+>>> # Label the scatter plots, for more info on how this is done, chekc out the link below
+>>> # http://matplotlib.org/users/annotations_guide.html
+>>> for label, x, y in zip(rets.columns, rets.mean(), rets.std()):
+...     plt.annotate(
+...         label,
+...         xy = (x, y), xytext = (50, 50),
+...         textcoords = 'offset points', ha = 'right', va = 'bottom',
+...         arrowprops = dict(arrowstyle = '-', connectionstyle = 'arc3,rad=-0.3'))
+...
+Text(50, 50, 'AAPL')
+Text(50, 50, 'GOOG')
+Text(50, 50, 'MSFT')
+Text(50, 50, 'AMZN')
+>>> plt.show()
+>>>
+>>> #Value at Risk
+>>> #We can treat value at risk as the amount of money we could expect to lose (aka putting at risk) for a given confidence interval.
+>>> sns.distplot(AAPL['Daily Return'].dropna(),bins=100, color='purple')
+C:\Users\adeol\anaconda3\lib\site-packages\seaborn\distributions.py:2619: FutureWarning: `distplot` is a deprecated function and will be removed in a future version. Please adapt your code to use either `displot` (a figure-level function with similar flexibility) or `histplot` (an axes-level function for histograms).
+  warnings.warn(msg, FutureWarning)
+<AxesSubplot:xlabel='Daily Return', ylabel='Density'>
+>>> plt.show()
+>>> rets.head()
+Symbols         AAPL      GOOG      MSFT      AMZN
+Date
+2021-05-07  0.005327  0.007282  0.010932 -0.004464
+2021-05-10 -0.025805 -0.023775 -0.020914 -0.030721
+2021-05-11 -0.007410 -0.014050 -0.003843  0.010475
+2021-05-12 -0.024939 -0.030181 -0.029363 -0.022324
+2021-05-13  0.017920  0.010223  0.016862  0.003024
+>>> rets['AAPL'].quantile(0.05)
+-0.02582843535812802
+>>> #This means that with 95% confidence(i.e. 95% of the time), your worst daily loss will not exceed 2.6% per share
+>>>
+>>> #Monte Carlo Method
+>>> days=365
+>>> dt=1/days
+>>> mu=rets.mean()['AAPL']
+>>> sigma = rets.std()['AAPL']
+>>>
+
+>>> def stock_monte_carlo(start_price,days,mu,sigma):
+...     ''' This function takes in starting stock price, days of simulation,mu,sigma, and returns simulated price array'''
+...
+...     # Define a price array
+...     price = np.zeros(days)
+...     price[0] = start_price
+...     # Schok and Drift
+...     shock = np.zeros(days)
+...     drift = np.zeros(days)
+...
+...     # Run price array for number of days
+...     for x in range(1,days):
+...
+...         # Calculate Schock
+...         shock[x] = np.random.normal(loc=mu * dt, scale=sigma * np.sqrt(dt))
+...         # Calculate Drift
+...         drift[x] = mu * dt
+...         # Calculate Price
+...         price[x] = price[x-1] + (price[x-1] * (drift[x] + shock[x]))
+...
+...     return price
+...
+>>> #Now we will put the function to work
+>>> AAPL.head()
+                  High         Low        Open  ...  MA for 100 days  MA for 200 days  Daily Return
+Date                                            ...
+2021-05-06  129.750000  127.129997  127.889999  ...              NaN              NaN           NaN
+2021-05-07  131.259995  129.479996  130.850006  ...              NaN              NaN      0.005328
+2021-05-10  129.539993  126.809998  129.410004  ...              NaN              NaN     -0.025805
+2021-05-11  126.269997  122.769997  123.500000  ...              NaN              NaN     -0.007410
+2021-05-12  124.639999  122.250000  123.400002  ...              NaN              NaN     -0.024939
+
+[5 rows x 10 columns]
+>>> start_price = 127.89
+>>> #now we will run the monte carlo 100 times
+>>> for run in range(100):
+...  plt.plot(stock_monte_carlo(start_price,days,mu,sigma))
+...
+[<matplotlib.lines.Line2D object at 0x0000013725385E50>]
+[<matplotlib.lines.Line2D object at 0x0000013725385040>]
+[<matplotlib.lines.Line2D object at 0x0000013725385640>]
+[<matplotlib.lines.Line2D object at 0x00000137253953D0>]
+[<matplotlib.lines.Line2D object at 0x0000013725395A30>]
+[<matplotlib.lines.Line2D object at 0x0000013725395970>]
+[<matplotlib.lines.Line2D object at 0x0000013725395640>]
+[<matplotlib.lines.Line2D object at 0x00000137253AC1C0>]
+[<matplotlib.lines.Line2D object at 0x00000137253ACA30>]
+[<matplotlib.lines.Line2D object at 0x00000137253AC460>]
+[<matplotlib.lines.Line2D object at 0x0000013724D6D850>]
+[<matplotlib.lines.Line2D object at 0x00000137253B86D0>]
+[<matplotlib.lines.Line2D object at 0x00000137253B8550>]
+[<matplotlib.lines.Line2D object at 0x00000137253B8F40>]
+[<matplotlib.lines.Line2D object at 0x00000137253B84F0>]
+[<matplotlib.lines.Line2D object at 0x00000137253B0970>]
+[<matplotlib.lines.Line2D object at 0x00000137253B08B0>]
+[<matplotlib.lines.Line2D object at 0x00000137253B02E0>]
+[<matplotlib.lines.Line2D object at 0x00000137253B0DF0>]
+[<matplotlib.lines.Line2D object at 0x00000137246ECAC0>]
+[<matplotlib.lines.Line2D object at 0x00000137253CE7F0>]
+[<matplotlib.lines.Line2D object at 0x00000137253CEF40>]
+[<matplotlib.lines.Line2D object at 0x00000137253CE3A0>]
+[<matplotlib.lines.Line2D object at 0x0000013724D73A30>]
+[<matplotlib.lines.Line2D object at 0x0000013724D731C0>]
+[<matplotlib.lines.Line2D object at 0x0000013724D8AE20>]
+[<matplotlib.lines.Line2D object at 0x0000013724D8A9D0>]
+[<matplotlib.lines.Line2D object at 0x0000013724D8A940>]
+[<matplotlib.lines.Line2D object at 0x0000013724D8AF40>]
+[<matplotlib.lines.Line2D object at 0x00000137251F7550>]
+[<matplotlib.lines.Line2D object at 0x00000137251F7220>]
+[<matplotlib.lines.Line2D object at 0x00000137251F7C40>]
+[<matplotlib.lines.Line2D object at 0x00000137251F7760>]
+[<matplotlib.lines.Line2D object at 0x000001372496FBB0>]
+[<matplotlib.lines.Line2D object at 0x000001372496F370>]
+[<matplotlib.lines.Line2D object at 0x0000013725817280>]
+[<matplotlib.lines.Line2D object at 0x0000013725817820>]
+[<matplotlib.lines.Line2D object at 0x00000137258178E0>]
+[<matplotlib.lines.Line2D object at 0x0000013725817E80>]
+[<matplotlib.lines.Line2D object at 0x000001372988C4C0>]
+[<matplotlib.lines.Line2D object at 0x000001372988C0A0>]
+[<matplotlib.lines.Line2D object at 0x000001372988C7F0>]
+[<matplotlib.lines.Line2D object at 0x000001372988C880>]
+[<matplotlib.lines.Line2D object at 0x0000013724350640>]
+[<matplotlib.lines.Line2D object at 0x0000013724419F10>]
+[<matplotlib.lines.Line2D object at 0x0000013724419D60>]
+[<matplotlib.lines.Line2D object at 0x0000013724415A90>]
+[<matplotlib.lines.Line2D object at 0x0000013724413760>]
+[<matplotlib.lines.Line2D object at 0x00000137244137C0>]
+[<matplotlib.lines.Line2D object at 0x0000013728194910>]
+[<matplotlib.lines.Line2D object at 0x0000013728194640>]
+[<matplotlib.lines.Line2D object at 0x0000013728194BE0>]
+[<matplotlib.lines.Line2D object at 0x0000013728194670>]
+[<matplotlib.lines.Line2D object at 0x00000137247C1130>]
+[<matplotlib.lines.Line2D object at 0x00000137247C13D0>]
+[<matplotlib.lines.Line2D object at 0x00000137247C1790>]
+[<matplotlib.lines.Line2D object at 0x00000137247C1B20>]
+[<matplotlib.lines.Line2D object at 0x00000137247C1EB0>]
+[<matplotlib.lines.Line2D object at 0x00000137251E0280>]
+[<matplotlib.lines.Line2D object at 0x00000137251E0610>]
+[<matplotlib.lines.Line2D object at 0x00000137251E09A0>]
+[<matplotlib.lines.Line2D object at 0x00000137251E0D30>]
+[<matplotlib.lines.Line2D object at 0x00000137251DA100>]
+[<matplotlib.lines.Line2D object at 0x00000137251DA490>]
+[<matplotlib.lines.Line2D object at 0x00000137251DA820>]
+[<matplotlib.lines.Line2D object at 0x00000137251DABB0>]
+[<matplotlib.lines.Line2D object at 0x00000137251DAF40>]
+[<matplotlib.lines.Line2D object at 0x00000137251D7310>]
+[<matplotlib.lines.Line2D object at 0x00000137251D76A0>]
+[<matplotlib.lines.Line2D object at 0x00000137251D7A30>]
+[<matplotlib.lines.Line2D object at 0x00000137251D7DC0>]
+[<matplotlib.lines.Line2D object at 0x00000137280E9190>]
+[<matplotlib.lines.Line2D object at 0x00000137280E9520>]
+[<matplotlib.lines.Line2D object at 0x00000137280E98B0>]
+[<matplotlib.lines.Line2D object at 0x00000137280E9C40>]
+[<matplotlib.lines.Line2D object at 0x00000137280E9FD0>]
+[<matplotlib.lines.Line2D object at 0x00000137280B73A0>]
+[<matplotlib.lines.Line2D object at 0x00000137280B7730>]
+[<matplotlib.lines.Line2D object at 0x00000137280B7AC0>]
+[<matplotlib.lines.Line2D object at 0x00000137280B7E50>]
+[<matplotlib.lines.Line2D object at 0x00000137280B6220>]
+[<matplotlib.lines.Line2D object at 0x00000137280B65B0>]
+[<matplotlib.lines.Line2D object at 0x00000137280B6940>]
+[<matplotlib.lines.Line2D object at 0x00000137280B6CD0>]
+[<matplotlib.lines.Line2D object at 0x00000137280EF0A0>]
+[<matplotlib.lines.Line2D object at 0x00000137280EF430>]
+[<matplotlib.lines.Line2D object at 0x00000137280EF7C0>]
+[<matplotlib.lines.Line2D object at 0x00000137280EFB50>]
+[<matplotlib.lines.Line2D object at 0x00000137280EFEE0>]
+[<matplotlib.lines.Line2D object at 0x0000013724BF52B0>]
+[<matplotlib.lines.Line2D object at 0x0000013724BF5640>]
+[<matplotlib.lines.Line2D object at 0x0000013724BF59D0>]
+[<matplotlib.lines.Line2D object at 0x0000013724BF5D60>]
+[<matplotlib.lines.Line2D object at 0x0000013724C0F130>]
+[<matplotlib.lines.Line2D object at 0x0000013724C0F4C0>]
+[<matplotlib.lines.Line2D object at 0x0000013724C0F850>]
+[<matplotlib.lines.Line2D object at 0x0000013724C0FBE0>]
+[<matplotlib.lines.Line2D object at 0x0000013724C0FF70>]
+[<matplotlib.lines.Line2D object at 0x0000013724BD0340>]
+[<matplotlib.lines.Line2D object at 0x0000013724BD06D0>]
+>>> plt.xlabel("Days")
+Text(0.5, 0, 'Days')
+>>> plt.ylabel("Price")
+Text(0, 0.5, 'Price')
+>>> plt.title('Monte Carlo Analysis for Apple Inc')
+Text(0.5, 1.0, 'Monte Carlo Analysis for Apple Inc')
+>>> plt.show()
+>>> #now lets do a 10,000 run
+>>> runs=10000
+>>> simulations = np.zeros(runs)
+>>> for run in range(runs):
+...  simulations[run]=stock_monte_carlo(start_price,days,mu,sigma)[days-1]
+...
+>>>
+>>>
+>>> #now we will use a histogram
+>>> q=np.percentile(simulations,1)
+>>> plt.hist(simulations,bins=200)
+(array([  2.,   1.,   0.,   1.,   1.,   0.,   0.,   1.,   1.,   1.,   2.,
+         1.,   2.,   4.,   1.,   0.,   2.,   3.,   4.,   4.,   4.,   3.,
+         4.,   8.,   5.,   4.,   3.,   9.,  11.,   9.,  11.,  18.,  12.,
+        14.,  23.,  18.,  17.,  31.,  25.,  29.,  25.,  30.,  42.,  40.,
+        37.,  41.,  50.,  48.,  47.,  57.,  60.,  65.,  64.,  76.,  62.,
+        61.,  75.,  79.,  86.,  67.,  83.,  95.,  81.,  77., 108., 107.,
+       118., 107., 110., 113., 100., 118., 135., 129., 134., 133., 115.,
+       126., 125., 136., 139., 149., 159., 163., 161., 178., 134., 155.,
+       150., 148., 119., 153., 134., 143., 161., 135., 141., 150., 131.,
+       135., 141., 147., 155., 132., 129., 112., 114., 134., 129.,  86.,
+       109.,  96., 100., 106.,  96., 100.,  79.,  85.,  74.,  76.,  79.,
+        61.,  68.,  50.,  78.,  59.,  44.,  43.,  49.,  35.,  40.,  30.,
+        37.,  43.,  35.,  31.,  40.,  28.,  30.,  27.,  15.,  23.,  18.,
+        23.,  13.,  20.,  26.,  14.,  15.,  13.,  13.,  16.,   9.,   8.,
+         7.,   7.,   9.,   5.,   3.,   4.,   5.,   4.,   5.,   5.,   4.,
+         1.,   0.,   4.,   2.,   2.,   0.,   2.,   0.,   1.,   0.,   1.,
+         1.,   0.,   1.,   2.,   1.,   0.,   1.,   0.,   0.,   0.,   0.,
+         0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,
+         0.,   1.]), array([121.13859461, 121.21715645, 121.29571829, 121.37428013,
+       121.45284197, 121.53140382, 121.60996566, 121.6885275 ,
+       121.76708934, 121.84565118, 121.92421302, 122.00277486,
+       122.0813367 , 122.15989854, 122.23846038, 122.31702222,
+       122.39558406, 122.4741459 , 122.55270774, 122.63126958,
+       122.70983142, 122.78839326, 122.8669551 , 122.94551695,
+       123.02407879, 123.10264063, 123.18120247, 123.25976431,
+       123.33832615, 123.41688799, 123.49544983, 123.57401167,
+       123.65257351, 123.73113535, 123.80969719, 123.88825903,
+       123.96682087, 124.04538271, 124.12394455, 124.20250639,
+       124.28106823, 124.35963008, 124.43819192, 124.51675376,
+       124.5953156 , 124.67387744, 124.75243928, 124.83100112,
+       124.90956296, 124.9881248 , 125.06668664, 125.14524848,
+       125.22381032, 125.30237216, 125.380934  , 125.45949584,
+       125.53805768, 125.61661952, 125.69518136, 125.77374321,
+       125.85230505, 125.93086689, 126.00942873, 126.08799057,
+       126.16655241, 126.24511425, 126.32367609, 126.40223793,
+       126.48079977, 126.55936161, 126.63792345, 126.71648529,
+       126.79504713, 126.87360897, 126.95217081, 127.03073265,
+       127.10929449, 127.18785633, 127.26641818, 127.34498002,
+       127.42354186, 127.5021037 , 127.58066554, 127.65922738,
+       127.73778922, 127.81635106, 127.8949129 , 127.97347474,
+       128.05203658, 128.13059842, 128.20916026, 128.2877221 ,
+       128.36628394, 128.44484578, 128.52340762, 128.60196946,
+       128.68053131, 128.75909315, 128.83765499, 128.91621683,
+       128.99477867, 129.07334051, 129.15190235, 129.23046419,
+       129.30902603, 129.38758787, 129.46614971, 129.54471155,
+       129.62327339, 129.70183523, 129.78039707, 129.85895891,
+       129.93752075, 130.01608259, 130.09464444, 130.17320628,
+       130.25176812, 130.33032996, 130.4088918 , 130.48745364,
+       130.56601548, 130.64457732, 130.72313916, 130.801701  ,
+       130.88026284, 130.95882468, 131.03738652, 131.11594836,
+       131.1945102 , 131.27307204, 131.35163388, 131.43019572,
+       131.50875756, 131.58731941, 131.66588125, 131.74444309,
+       131.82300493, 131.90156677, 131.98012861, 132.05869045,
+       132.13725229, 132.21581413, 132.29437597, 132.37293781,
+       132.45149965, 132.53006149, 132.60862333, 132.68718517,
+       132.76574701, 132.84430885, 132.92287069, 133.00143254,
+       133.07999438, 133.15855622, 133.23711806, 133.3156799 ,
+       133.39424174, 133.47280358, 133.55136542, 133.62992726,
+       133.7084891 , 133.78705094, 133.86561278, 133.94417462,
+       134.02273646, 134.1012983 , 134.17986014, 134.25842198,
+       134.33698382, 134.41554567, 134.49410751, 134.57266935,
+       134.65123119, 134.72979303, 134.80835487, 134.88691671,
+       134.96547855, 135.04404039, 135.12260223, 135.20116407,
+       135.27972591, 135.35828775, 135.43684959, 135.51541143,
+       135.59397327, 135.67253511, 135.75109695, 135.8296588 ,
+       135.90822064, 135.98678248, 136.06534432, 136.14390616,
+       136.222468  , 136.30102984, 136.37959168, 136.45815352,
+       136.53671536, 136.6152772 , 136.69383904, 136.77240088,
+       136.85096272]), <BarContainer object of 200 artists>)
+>>> plt.figtext(0.6,0.8, s="Start price: $%.2f" %start_price)
+Text(0.6, 0.8, 'Start price: $127.89')
+>>> #Mean ending price
+>>> plt.figtext(0.6,0.7,"Mean final price:$%.2f" % simulations.mean())
+Text(0.6, 0.7, 'Mean final price:$128.14')
+>>> #Variance of the price (within 99% confidence interval)
+>>> plt.figtext(0.6,0.6,"VaR(0.99): $%.2f" % (start_price - q,))
+Text(0.6, 0.6, 'VaR(0.99): $4.32')
+>>> #Display 1% quantile
+>>> plt.figtext(0.15,0.6,"q(0.99): $%.2f" % q)
+Text(0.15, 0.6, 'q(0.99): $123.57')
+>>> #Plot a line at the 1% quantile result
+>>> plt.axvline(x=q, linewidth=4, color='r')
+<matplotlib.lines.Line2D object at 0x0000013727F1D760>
+>>> #Title
+>>> plt.title (u"Final Price Distribution for Apple Inc Stock after %s days" % days, weight='bold');
+Text(0.5, 1.0, 'Final Price Distribution for Apple Inc Stock after 365 days')
+>>> plt.show()
+>>>
